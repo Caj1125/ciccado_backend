@@ -1,0 +1,211 @@
+const Bug = require("../models/Bug");
+const Comment = require("../models/Comment");
+const {
+  notifyBugAssigned,
+  notifyStatusChange,
+} = require("../services/notificationService");
+
+// @desc    Create a new bug
+// @route   POST /api/bugs
+// @access  Private (Tester)
+const createBug = async (req, res, next) => {
+  try {
+    const { title, description, severity, priority, project, attachments } =
+      req.body;
+
+    const bug = await Bug.create({
+      title,
+      description,
+      severity,
+      priority,
+      project,
+      reportedBy: req.user._id,
+      attachments,
+    });
+
+    res.status(201).json(bug);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all bugs (with optional query filters)
+// @route   GET /api/bugs
+// @access  Private
+const getBugs = async (req, res, next) => {
+  try {
+    const filters = {};
+
+    if (req.query.project) filters.project = req.query.project;
+    if (req.query.status) filters.status = req.query.status;
+    if (req.query.severity) filters.severity = req.query.severity;
+    if (req.query.priority) filters.priority = req.query.priority;
+    if (req.query.assignedTo) filters.assignedTo = req.query.assignedTo;
+
+    const bugs = await Bug.find(filters)
+      .populate("reportedBy", "name email")
+      .populate("assignedTo", "name email")
+      .populate("project", "name")
+      .sort({ createdAt: -1 });
+
+    res.json(bugs);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get single bug by id
+// @route   GET /api/bugs/:id
+// @access  Private
+const getBugById = async (req, res, next) => {
+  try {
+    const bug = await Bug.findById(req.params.id)
+      .populate("reportedBy", "name email")
+      .populate("assignedTo", "name email")
+      .populate("project", "name")
+      .populate({
+        path: "comments",
+        populate: { path: "user", select: "name email" },
+      });
+
+    if (!bug) {
+      res.status(404);
+      throw new Error("Bug not found");
+    }
+
+    res.json(bug);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update a bug
+// @route   PUT /api/bugs/:id
+// @access  Private
+const updateBug = async (req, res, next) => {
+  try {
+    const bug = await Bug.findById(req.params.id);
+    if (!bug) {
+      res.status(404);
+      throw new Error("Bug not found");
+    }
+
+    const updatedBug = await Bug.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.json(updatedBug);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete a bug
+// @route   DELETE /api/bugs/:id
+// @access  Private (Admin)
+const deleteBug = async (req, res, next) => {
+  try {
+    const bug = await Bug.findById(req.params.id);
+    if (!bug) {
+      res.status(404);
+      throw new Error("Bug not found");
+    }
+
+    // Also remove associated comments
+    await Comment.deleteMany({ bug: bug._id });
+    await bug.deleteOne();
+
+    res.json({ message: "Bug removed" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Change bug status
+// @route   PATCH /api/bugs/:id/status
+// @access  Private
+const changeStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const bug = await Bug.findById(req.params.id);
+    if (!bug) {
+      res.status(404);
+      throw new Error("Bug not found");
+    }
+
+    const oldStatus = bug.status;
+    bug.status = status;
+    await bug.save();
+
+    await notifyStatusChange({ bug, oldStatus, newStatus: status });
+
+    res.json(bug);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Assign bug to a developer
+// @route   PATCH /api/bugs/:id/assign
+// @access  Private (Manager)
+const assignBug = async (req, res, next) => {
+  try {
+    const { assignedTo } = req.body;
+    const bug = await Bug.findById(req.params.id);
+    if (!bug) {
+      res.status(404);
+      throw new Error("Bug not found");
+    }
+
+    bug.assignedTo = assignedTo;
+    if (bug.status === "New") {
+      bug.status = "Assigned";
+    }
+    await bug.save();
+
+    await notifyBugAssigned({ bug, assignedTo });
+
+    res.json(bug);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Add a comment to a bug
+// @route   POST /api/bugs/:id/comments
+// @access  Private
+const addComment = async (req, res, next) => {
+  try {
+    const bug = await Bug.findById(req.params.id);
+    if (!bug) {
+      res.status(404);
+      throw new Error("Bug not found");
+    }
+
+    const comment = await Comment.create({
+      bug: bug._id,
+      user: req.user._id,
+      text: req.body.text,
+    });
+
+    bug.comments.push(comment._id);
+    await bug.save();
+
+    const populated = await comment.populate("user", "name email");
+    res.status(201).json(populated);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  createBug,
+  getBugs,
+  getBugById,
+  updateBug,
+  deleteBug,
+  changeStatus,
+  assignBug,
+  addComment,
+};

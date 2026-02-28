@@ -1,0 +1,143 @@
+bug-tracker-backend/
+│
+├── src/
+│   ├── config/
+│   │     └── db.js
+│   │
+│   ├── models/
+│   │     ├── User.js
+│   │     ├── Project.js
+│   │     ├── Bug.js
+│   │     └── Comment.js
+│   │
+│   ├── controllers/
+│   │     ├── authController.js
+│   │     ├── bugController.js
+│   │     ├── projectController.js
+│   │     └── userController.js
+│   │
+│   ├── routes/
+│   │     ├── authRoutes.js
+│   │     ├── bugRoutes.js
+│   │     ├── projectRoutes.js
+│   │     └── userRoutes.js
+│   │
+│   ├── middlewares/
+│   │     ├── authMiddleware.js
+│   │     ├── roleMiddleware.js
+│   │     └── errorMiddleware.js
+│   │
+│   ├── services/
+│   │     └── notificationService.js
+│   │
+│   ├── utils/
+│   │     └── constants.js
+│   │
+│   └── app.js
+│
+├── server.js
+└── package.json
+
+User models
+{
+  name: String,
+  email: String,
+  password: String,
+  role: ["admin", "manager", "developer", "tester"],
+  createdAt: Date
+}
+
+Project models
+{
+  name: String,
+  description: String,
+  members: [ObjectId], // references Users
+  createdBy: ObjectId,
+  createdAt: Date
+}
+
+Bug models
+{
+  title: String,
+  description: String,
+  severity: ["Low", "Medium", "High", "Critical"],
+  priority: ["Low", "Medium", "High"],
+  status: ["New", "Assigned", "In Progress", "Fixed", "Testing", "Closed", "Reopened"],
+  project: ObjectId,
+  reportedBy: ObjectId,
+  assignedTo: ObjectId,
+  comments: [ObjectId],
+  attachments: [String],
+  createdAt: Date,
+  updatedAt: Date
+}
+
+Comment model 
+{
+  bug: ObjectId,
+  user: ObjectId,
+  text: String,
+  createdAt: Date
+}
+
+Authentication routes
+POST   /api/auth/register
+POST   /api/auth/login
+GET    /api/auth/me
+
+Bug routes
+POST   /api/bugs              // create bug
+GET    /api/bugs              // list all
+GET    /api/bugs/:id          // get single
+PUT    /api/bugs/:id          // update bug
+DELETE /api/bugs/:id          // delete
+PATCH  /api/bugs/:id/status   // change status
+PATCH  /api/bugs/:id/assign   // assign developer
+
+Project routes
+POST   /api/projects
+GET    /api/projects
+GET    /api/projects/:id
+PUT    /api/projects/:id
+
+Middleware
+Client Request
+      ↓
+Route
+      ↓
+Auth Middleware (JWT verify)
+      ↓
+Role Middleware (Check permission)
+      ↓
+Controller
+      ↓
+Service Layer
+      ↓
+Database
+      ↓
+Response
+
+Authentication models:
+Login Flow
+
+User sends email + password
+
+Password compared (bcrypt)
+
+Server generates JWT
+
+Client stores token
+
+Token sent in Authorization header
+
+Role base access controllers
+| Action                 | Allowed Role |
+| ---------------------- | ------------ |
+| Create Bug             | Tester       |
+| Assign Bug             | Manager      |
+| Change Status to Fixed | Developer    |
+| Close Bug              | Tester       |
+| Delete Bug             | Admin        |
+
+Business Service model
+Controller → Service → Model
