@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const {
+  getDevelopers,
   getUsers,
   getUserById,
   updateUserRole,
@@ -10,7 +11,14 @@ const { protect } = require("../middlewares/authMiddleware");
 const { authorize } = require("../middlewares/roleMiddleware");
 const { ROLES } = require("../utils/constants");
 
-// All user management routes require admin
+router.get(
+  "/developers",
+  protect,
+  authorize(ROLES.ADMIN, ROLES.MANAGER),
+  getDevelopers
+);
+
+// All remaining user management routes require admin
 router.use(protect, authorize(ROLES.ADMIN));
 
 router.route("/").get(getUsers);

@@ -1,5 +1,19 @@
 const User = require("../models/User");
 
+// @desc    Get all developers (admin/manager)
+// @route   GET /api/users/developers
+// @access  Private (Admin, Manager)
+const getDevelopers = async (req, res, next) => {
+  try {
+    const developers = await User.find({ role: "developer" })
+      .select("name email role")
+      .sort({ name: 1 });
+    res.json(developers);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get all users (admin only)
 // @route   GET /api/users
 // @access  Private (Admin)
@@ -67,6 +81,7 @@ const deleteUser = async (req, res, next) => {
 };
 
 module.exports = {
+  getDevelopers,
   getUsers,
   getUserById,
   updateUserRole,

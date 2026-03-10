@@ -19,7 +19,7 @@ router.use(protect);
 
 router
   .route("/")
-  .post(authorize(ROLES.TESTER), createBug)
+  .post(authorize(ROLES.TESTER, ROLES.ADMIN), createBug)
   .get(getBugs);
 
 router
@@ -29,7 +29,7 @@ router
   .delete(authorize(ROLES.ADMIN), deleteBug);
 
 router.patch("/:id/status", changeStatus);
-router.patch("/:id/assign", authorize(ROLES.MANAGER), assignBug);
+router.patch("/:id/assign", authorize(ROLES.MANAGER, ROLES.ADMIN), assignBug);
 router.post("/:id/comments", addComment);
 
 module.exports = router;

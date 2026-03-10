@@ -1,5 +1,7 @@
 const Bug = require("../models/Bug");
 const Comment = require("../models/Comment");
+const User = require("../models/User");
+const { ROLES } = require("../utils/constants");
 const {
   notifyBugAssigned,
   notifyStatusChange,
@@ -42,6 +44,11 @@ const getBugs = async (req, res, next) => {
     if (req.query.priority) filters.priority = req.query.priority;
     if (req.query.assignedTo) filters.assignedTo = req.query.assignedTo;
 
+    // Developers can only view bugs assigned to themselves.
+    if (req.user.role === ROLES.DEVELOPER) {
+      filters.assignedTo = req.user._id;
+    }
+
     const bugs = await Bug.find(filters)
       .populate("reportedBy", "name email")
       .populate("assignedTo", "name email")
@@ -71,6 +78,14 @@ const getBugById = async (req, res, next) => {
     if (!bug) {
       res.status(404);
       throw new Error("Bug not found");
+    }
+
+    if (
+      req.user.role === ROLES.DEVELOPER &&
+      (!bug.assignedTo || bug.assignedTo._id.toString() !== req.user._id.toString())
+    ) {
+      res.status(403);
+      throw new Error("Not authorized to view this bug");
     }
 
     res.json(bug);
@@ -152,6 +167,23 @@ const changeStatus = async (req, res, next) => {
 const assignBug = async (req, res, next) => {
   try {
     const { assignedTo } = req.body;
+
+    if (!assignedTo) {
+      res.status(400);
+      throw new Error("assignedTo is required");
+    }
+
+    const assignee = await User.findById(assignedTo).select("role");
+    if (!assignee) {
+      res.status(404);
+      throw new Error("Assignee user not found");
+    }
+
+    if (assignee.role !== ROLES.DEVELOPER) {
+      res.status(400);
+      throw new Error("Bugs can only be assigned to developers");
+    }
+
     const bug = await Bug.findById(req.params.id);
     if (!bug) {
       res.status(404);
@@ -166,7 +198,12 @@ const assignBug = async (req, res, next) => {
 
     await notifyBugAssigned({ bug, assignedTo });
 
-    res.json(bug);
+    const populatedBug = await Bug.findById(bug._id)
+      .populate("reportedBy", "name email")
+      .populate("assignedTo", "name email")
+      .populate("project", "name");
+
+    res.json(populatedBug);
   } catch (error) {
     next(error);
   }
