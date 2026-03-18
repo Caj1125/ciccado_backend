@@ -4,6 +4,7 @@ const morgan = require("morgan");
 
 // Route imports
 const authRoutes = require("./routes/authRoutes");
+const analyticsRoutes = require("./routes/analyticsRoutes");
 const bugRoutes = require("./routes/bugRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -29,6 +30,7 @@ app.get("/", (_req, res) => {
 
 // ---------- Routes ----------
 app.use("/api/auth", authRoutes);
+app.use("/api/analytics", analyticsRoutes);
 app.use("/api/bugs", bugRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);

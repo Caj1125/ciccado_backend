@@ -105,7 +105,12 @@ const updateBug = async (req, res, next) => {
       throw new Error("Bug not found");
     }
 
-    const updatedBug = await Bug.findByIdAndUpdate(req.params.id, req.body, {
+    const updates = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(updates, "status")) {
+      updates.resolvedAt = updates.status === "Closed" ? new Date() : null;
+    }
+
+    const updatedBug = await Bug.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
     });
@@ -151,6 +156,7 @@ const changeStatus = async (req, res, next) => {
 
     const oldStatus = bug.status;
     bug.status = status;
+    bug.resolvedAt = status === "Closed" ? new Date() : null;
     await bug.save();
 
     await notifyStatusChange({ bug, oldStatus, newStatus: status });

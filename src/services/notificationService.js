@@ -1,10 +1,6 @@
-/**
- * Notification service placeholder.
- * Extend with email (nodemailer), Slack webhooks, or push notifications as needed.
- */
+
 
 const notifyBugAssigned = async ({ bug, assignedTo }) => {
-  // TODO: integrate real notification channel (email / Slack / websocket)
   console.log(
     `[Notification] Bug "${bug.title}" assigned to user ${assignedTo}`
   );

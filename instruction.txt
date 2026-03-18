@@ -1,0 +1,197 @@
+Bug Tracking System – Backend Analytics Implementation Instructions
+
+Objective
+Add backend support for the following analytics:
+
+1. Bug trend chart (reported vs resolved over time)
+2. Bug priority breakdown
+3. Resolution rate
+4. Average time to fix
+
+--------------------------------------------------
+
+1. Data Requirements
+
+Ensure the Bug model contains:
+
+- createdAt (already present via timestamps)
+- status
+- priority
+- resolvedAt (must be added if not already present)
+
+resolvedAt must be set when status becomes "Closed".
+
+--------------------------------------------------
+
+2. Create Analytics Endpoint
+
+Create a new route:
+
+GET /api/analytics
+
+This endpoint will return all analytics data in one response.
+
+--------------------------------------------------
+
+3. Bug Trend Data (Reported vs Resolved)
+
+Purpose:
+Provide data for line/bar chart over time.
+
+Steps:
+
+1. Decide grouping interval:
+   - weekly (recommended)
+   OR
+   - monthly
+
+2. For "reported bugs":
+   - Group bugs by createdAt date
+   - Count number of bugs per time interval
+
+3. For "resolved bugs":
+   - Filter bugs where resolvedAt exists
+   - Group by resolvedAt date
+   - Count number per time interval
+
+4. Output format:
+
+[
+  {
+    period: "2026-W10",
+    reported: 5,
+    resolved: 3
+  },
+  {
+    period: "2026-W11",
+    reported: 8,
+    resolved: 6
+  }
+]
+
+--------------------------------------------------
+
+4. Bug Priority Breakdown
+
+Purpose:
+Provide data for pie/donut chart.
+
+Steps:
+
+1. Group all bugs by priority field:
+   - Critical
+   - High
+   - Medium
+   - Low
+
+2. Count number of bugs in each category
+
+3. Output format:
+
+{
+  Critical: 4,
+  High: 6,
+  Medium: 10,
+  Low: 3
+}
+
+--------------------------------------------------
+
+5. Resolution Rate
+
+Purpose:
+Show percentage of bugs resolved.
+
+Steps:
+
+1. Count total bugs
+2. Count bugs where status = "Closed"
+
+3. Compute:
+
+resolutionRate = (closedBugs / totalBugs) * 100
+
+4. Output format:
+
+{
+  resolutionRate: 75
+}
+
+--------------------------------------------------
+
+6. Average Time to Fix
+
+Purpose:
+Measure average bug resolution time.
+
+Steps:
+
+1. Fetch all bugs where resolvedAt is not null
+
+2. For each bug:
+   timeTaken = resolvedAt - createdAt
+
+3. Sum all timeTaken values
+
+4. Divide by number of resolved bugs
+
+5. Convert result to readable unit:
+   - hours or days
+
+6. Output format:
+
+{
+  avgResolutionTime: "2.3 days"
+}
+
+--------------------------------------------------
+
+7. Combine All Analytics in One Response
+
+The /api/analytics endpoint should return:
+
+{
+  trend: [
+    { period, reported, resolved }
+  ],
+  priorityBreakdown: {
+    Critical,
+    High,
+    Medium,
+    Low
+  },
+  resolutionRate: number,
+  avgResolutionTime: string
+}
+
+--------------------------------------------------
+
+8. Performance Considerations
+
+- Use database aggregation (grouping) instead of manual loops where possible
+- Only include required fields in queries
+- Cache results if dataset grows large
+
+--------------------------------------------------
+
+9. Validation
+
+Verify:
+
+- trend data matches actual bug creation/resolution dates
+- priority counts are correct
+- resolution rate updates when bugs are closed
+- average time only includes resolved bugs
+
+--------------------------------------------------
+
+10. Expected Outcome
+
+The backend should now provide:
+
+- Time-based bug trends
+- Priority distribution
+- Resolution percentage
+- Average resolution time
+
+These can be directly consumed by frontend charts.

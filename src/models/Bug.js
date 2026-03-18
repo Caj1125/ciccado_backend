@@ -28,6 +28,10 @@ const bugSchema = new mongoose.Schema(
       enum: BUG_STATUS,
       default: "New",
     },
+    resolvedAt: {
+      type: Date,
+      default: null,
+    },
     project: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Project",

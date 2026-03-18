@@ -7,7 +7,7 @@ const ROLES = {
 
 const BUG_SEVERITY = ["Low", "Medium", "High", "Critical"];
 
-const BUG_PRIORITY = ["Low", "Medium", "High"];
+const BUG_PRIORITY = ["Low", "Medium", "High", "Critical"];
 
 const BUG_STATUS = [
   "New",
