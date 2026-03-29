@@ -14,7 +14,6 @@ const { notFound, errorHandler } = require("./middlewares/errorMiddleware");
 
 const app = express();
 
-// ---------- Global Middleware ----------
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -23,19 +22,18 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
 
-// ---------- Health Check ----------
 app.get("/", (_req, res) => {
   res.json({ message: "Bug Tracker API is running" });
 });
 
-// ---------- Routes ----------
+// Routes 
 app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/bugs", bugRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/users", userRoutes);
 
-// ---------- Error Handling ----------
+// Error Handling 
 app.use(notFound);
 app.use(errorHandler);
 
