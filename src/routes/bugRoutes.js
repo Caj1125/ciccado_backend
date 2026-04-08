@@ -19,7 +19,7 @@ router.use(protect);
 
 router
   .route("/")
-  .post(authorize(ROLES.TESTER, ROLES.ADMIN), createBug)
+  .post(authorize(ROLES.TESTER, ROLES.MANAGER, ROLES.ADMIN), createBug)
   .get(getBugs);
 
 router

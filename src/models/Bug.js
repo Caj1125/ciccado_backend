@@ -47,6 +47,12 @@ const bugSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    assignedBy:
+    {
+     type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     comments: [
       {
         type: mongoose.Schema.Types.ObjectId,

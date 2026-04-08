@@ -9,7 +9,7 @@ const {
 
 // @desc    Create a new bug
 // @route   POST /api/bugs
-// @access  Private (Tester)
+// @access  Private (Tester, Manager, Admin)
 const createBug = async (req, res, next) => {
   try {
     const { title, description, severity, priority, project, attachments } =
@@ -180,6 +180,21 @@ const assignBug = async (req, res, next) => {
     }
 
     const assignee = await User.findById(assignedTo).select("role");
+
+    // ✅ FIX: use req.user instead of undefined assignedby
+    const assigner = req.user;
+
+    if (!assigner) {
+      res.status(401);
+      throw new Error("Unauthorized");
+    }
+
+    // ✅ FIX: correct error + status
+    if (assigner.role !== ROLES.MANAGER) {
+      res.status(403);
+      throw new Error("Only managers can assign bugs");
+    }
+
     if (!assignee) {
       res.status(404);
       throw new Error("Assignee user not found");
@@ -196,10 +211,21 @@ const assignBug = async (req, res, next) => {
       throw new Error("Bug not found");
     }
 
+    // ✅ FIX: check already assigned
+    if (bug.assignedTo) {
+      res.status(400);
+      throw new Error("Bug already assigned");
+    }
+
     bug.assignedTo = assignedTo;
+
+    // ✅ FIX: store manager id
+    bug.assignedBy = assigner._id;
+
     if (bug.status === "New") {
       bug.status = "Assigned";
     }
+
     await bug.save();
 
     await notifyBugAssigned({ bug, assignedTo });
@@ -214,7 +240,6 @@ const assignBug = async (req, res, next) => {
     next(error);
   }
 };
-
 // @desc    Add a comment to a bug
 // @route   POST /api/bugs/:id/comments
 // @access  Private
